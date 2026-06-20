@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rebuild Runbook — Always On Availability Group</title>
+<style>
+  :root{
+    --bg:#EEF1F5;
+    --surface:#FFFFFF;
+    --ink:#172230;
+    --ink-soft:#45566A;
+    --muted:#6B7A8D;
+    --line:#D8DEE7;
+    --accent:#1F5C8B;
+    --accent-strong:#16466B;
+    --console-bg:#0E1A26;
+    --console-ink:#D6E4F0;
+    --console-dim:#7E93A8;
+    --console-line:#22384C;
+    --amber:#8C5910;
+    --amber-bg:#FBF1DD;
+    --amber-line:#E7C588;
+    --teal:#15695B;
+    --teal-bg:#E2F1ED;
+    --teal-line:#A6D4CA;
+    --sans:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px 80px;}
+
+  /* Header */
+  .masthead{
+    background:var(--console-bg);color:#fff;
+    margin:0 -22px 38px;padding:42px 22px 34px;
+    border-bottom:3px solid var(--accent);
+  }
+  .masthead .inner{max-width:880px;margin:0 auto;}
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:#6FA8D6;margin:0 0 14px;
+  }
+  .masthead h1{
+    font-size:34px;line-height:1.15;font-weight:800;
+    letter-spacing:-.02em;margin:0 0 6px;
+  }
+  .masthead p.sub{color:#A9BED2;margin:0;font-size:15px;max-width:60ch;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;}
+  .chip{
+    font-family:var(--mono);font-size:12px;letter-spacing:.02em;
+    background:rgba(255,255,255,.06);border:1px solid var(--console-line);
+    color:#C7D7E6;padding:6px 11px;border-radius:4px;
+  }
+  .chip b{color:#fff;font-weight:600;}
+  .chip.ok{border-color:#2E6E5E;color:#9FD9C9;}
+  .chip.ok b{color:#C9F0E5;}
+
+  /* Q&A answer card */
+  .answer{
+    background:var(--surface);border:1px solid var(--line);
+    border-left:4px solid var(--accent);border-radius:8px;
+    padding:24px 26px;margin:0 0 34px;
+    box-shadow:0 1px 2px rgba(20,40,60,.04);
+  }
+  .answer h2{
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent-strong);margin:0 0 18px;font-weight:700;
+  }
+  .qa{display:grid;grid-template-columns:160px 1fr;gap:6px 22px;}
+  .qa+.qa{margin-top:18px;padding-top:18px;border-top:1px solid var(--line);}
+  .qa .q{font-weight:700;color:var(--ink);font-size:15px;}
+  .qa .a{color:var(--ink-soft);font-size:15px;margin:0;}
+  .qa .a code,.tag{
+    font-family:var(--mono);font-size:.88em;background:#EAF1F7;
+    color:var(--accent-strong);padding:1px 6px;border-radius:4px;
+  }
+  .verdict{
+    display:inline-block;font-family:var(--mono);font-size:11px;
+    letter-spacing:.08em;text-transform:uppercase;font-weight:600;
+    padding:2px 9px;border-radius:4px;margin-bottom:7px;
+  }
+  .verdict.keep{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-line);}
+  .verdict.cond{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-line);}
+
+  /* Section heading */
+  .sec-label{
+    font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);
+    margin:46px 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line);
+  }
+
+  /* Callout boxes */
+  .note{border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:14.5px;}
+  .note .h{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;font-weight:700;margin:0 0 6px;
+  }
+  .note p{margin:0;}
+  .note.caution{background:var(--amber-bg);border:1px solid var(--amber-line);color:#5E4310;}
+  .note.caution .h{color:var(--amber);}
+  .note.verify{background:var(--teal-bg);border:1px solid var(--teal-line);color:#114A40;}
+  .note.verify .h{color:var(--teal);}
+
+  /* Steps */
+  ol.steps{list-style:none;counter-reset:step;margin:0;padding:0;}
+  ol.steps>li{
+    counter-increment:step;position:relative;
+    padding:0 0 26px 60px;margin:0;
+  }
+  ol.steps>li::before{
+    content:counter(step,decimal-leading-zero);
+    position:absolute;left:0;top:-2px;
+    font-family:var(--mono);font-size:15px;font-weight:700;
+    color:#fff;background:var(--accent);
+    width:38px;height:38px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  ol.steps>li::after{
+    content:"";position:absolute;left:18px;top:42px;bottom:6px;
+    width:2px;background:var(--line);
+  }
+  ol.steps>li:last-child::after{display:none;}
+  ol.steps>li h3{
+    font-size:18px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em;
+    padding-top:6px;
+  }
+  ol.steps>li .body{color:var(--ink-soft);font-size:15px;}
+  ol.steps>li .body p{margin:0 0 12px;}
+
+  /* Command console */
+  .cmd{border-radius:8px;overflow:hidden;border:1px solid var(--console-line);margin:12px 0 4px;}
+  .cmd-bar{
+    background:#152433;display:flex;align-items:center;justify-content:space-between;
+    padding:7px 12px;border-bottom:1px solid var(--console-line);
+  }
+  .cmd-lang{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:#7FB0DA;font-weight:600;
+  }
+  .copy-btn{
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+    background:transparent;border:1px solid var(--console-line);
+    color:#A9BED2;padding:3px 11px;border-radius:5px;cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .copy-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .copy-btn:focus-visible{outline:2px solid #6FA8D6;outline-offset:2px;}
+  .cmd pre{
+    margin:0;background:var(--console-bg);color:var(--console-ink);
+    font-family:var(--mono);font-size:13.5px;line-height:1.65;
+    padding:14px 16px;overflow-x:auto;
+  }
+  .cmd pre .c{color:var(--console-dim);}
+  .opt-label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;font-weight:700;color:var(--accent-strong);
+    margin:18px 0 4px;
+  }
+  .opt-label.b{color:var(--teal);}
+
+  p.lead{font-size:15px;color:var(--ink-soft);margin:0 0 4px;}
+  .inline{font-family:var(--mono);font-size:.9em;background:#E7EDF3;color:var(--accent-strong);padding:1px 6px;border-radius:4px;}
+
+  footer{
+    margin-top:54px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:13px;color:var(--muted);
+  }
+  footer .mono{font-family:var(--mono);}
+
+  @media (max-width:600px){
+    .masthead h1{font-size:26px;}
+    .qa{grid-template-columns:1fr;gap:2px;}
+    .qa .q{margin-top:4px;}
+    ol.steps>li{padding-left:48px;}
+    ol.steps>li::before{width:32px;height:32px;font-size:13px;}
+    ol.steps>li::after{left:15px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="inner">
+      <p class="eyebrow">SQL Server · Always On · Recovery Runbook</p>
+      <h1>Rebuilding a Failed Availability Group</h1>
+      <p class="sub">Drop and recreate the failed AG <b>test_new_avg</b> from the healthy primary, keeping the same name, listener, and IP so applications stay unchanged.</p>
+      <div class="chips">
+        <span class="chip"><b>AG:</b>&nbsp;test_new_avg</span>
+        <span class="chip"><b>Root cause:</b>&nbsp;Failed AG cluster resource (DNS 1257)</span>
+        <span class="chip ok"><b>Primary:</b>&nbsp;Healthy</span>
+        <span class="chip ok"><b>Data-loss risk:</b>&nbsp;None</span>
+        <span class="chip"><b>Paths:</b>&nbsp;SSMS or PowerShell</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- Name & IP answer -->
+    <section class="answer">
+      <h2>Will the name and IP change?</h2>
+
+      <div class="qa">
+        <div class="q">AG name</div>
+        <div>
+          <span class="verdict keep">Keep it</span>
+          <p class="a">Dropping the AG frees the name, so you can recreate it as <code>test_new_avg</code>. No change needed.</p>
+        </div>
+      </div>
+
+      <div class="qa">
+        <div class="q">Listener name</div>
+        <div>
+          <span class="verdict keep">Keep it</span>
+          <p class="a">Reuse the same listener (network) name. This is what applications resolve and connect to, so keeping it means connection strings don't change.</p>
+        </div>
+      </div>
+
+      <div class="qa">
+        <div class="q">Listener IP</div>
+        <div>
+          <span class="verdict cond">Stays the same — if you set it</span>
+          <p class="a">The IP changes only if you assign a different one. Give the recreated listener the <b>same static IP</b> it had before and it stays identical. Use a static IP (not DHCP), and delete the stale listener <code>A</code> record first so the CNO can re-register the same name&nbsp;&rarr;&nbsp;IP cleanly in DNS.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Before you start -->
+    <p class="sec-label">Before you start</p>
+
+    <div class="note caution">
+      <p class="h">Fix the root cause first</p>
+      <p>Grant the cluster name object (CNO) permission on the secure DNS zone — or delete and recreate the stale listener A record. If the 1257 DNS-registration problem isn't fixed, the rebuilt listener fails the exact same way and the new AG resource won't come online.</p>
+    </div>
+
+    <p class="lead">Also confirm before touching anything:</p>
+    <div class="note verify">
+      <p class="h">Pre-flight</p>
+      <p>Primary is healthy and holds the current data (confirmed). Fresh full backups taken. On both replicas: the <span class="tag">[NT AUTHORITY\SYSTEM]</span> login exists with <span class="tag">ALTER ANY AVAILABILITY GROUP</span>, <span class="tag">CONNECT SQL</span>, and <span class="tag">VIEW SERVER STATE</span>, and the mirroring endpoints are STARTED.</p>
+    </div>
+
+    <!-- Steps -->
+    <p class="sec-label">Rebuild procedure</p>
+
+    <div class="note verify">
+      <p class="h">No SSMS? Run it all from PowerShell</p>
+      <p>Every T-SQL block below can be run through <span class="tag">Invoke-Sqlcmd</span> — install the module once with <span class="tag">Install-Module SqlServer</span>, then wrap any query. Step 7 (the only SSMS-wizard step) has a full native-PowerShell version.</p>
+      <div class="cmd">
+        <div class="cmd-bar"><span class="cmd-lang">PowerShell · pattern</span><button class="copy-btn">Copy</button></div>
+        <pre><code>Import-Module SqlServer
+<span class="c"># wrap any T-SQL step like this</span>
+Invoke-Sqlcmd -ServerInstance "SQLNODE1" -Database master `
+  -Query "DROP AVAILABILITY GROUP [test_new_avg];"</code></pre>
+      </div>
+    </div>
+
+    <ol class="steps">
+
+      <li>
+        <h3>Fix the CNO / DNS permission</h3>
+        <div class="body">
+          <p>If you haven't already, grant the CNO rights on the secure DNS zone and remove the stale listener A record. This is what lets the recreated listener register to the same name and IP.</p>
+        </div>
+      </li>
+
+      <li>
+        <h3>Back up the primary databases</h3>
+        <div class="body">
+          <p>The rebuild is safe for primary data, but take fresh full backups first as a safety net.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">SQL · primary</span><button class="copy-btn">Copy</button></div>
+            <pre><code>BACKUP DATABASE [YourDB]
+TO DISK = N'D:\Backup\YourDB_prerebuild.bak'
+WITH COMPRESSION, CHECKSUM, INIT;</code></pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Drop the availability group</h3>
+        <div class="body">
+          <p>Run on the primary. The primary's databases stay online as standalone read/write databases, and the failed WSFC cluster resource is removed automatically.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">SQL · primary</span><button class="copy-btn">Copy</button></div>
+            <pre><code>DROP AVAILABILITY GROUP [test_new_avg];</code></pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Verify the cluster resource is gone</h3>
+        <div class="body">
+          <p>Confirm no orphaned resource remains. If one lingers, remove it manually.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">PowerShell</span><button class="copy-btn">Copy</button></div>
+            <pre><code><span class="c"># should return nothing</span>
+Get-ClusterResource | ? Name -eq "test_new_avg"
+
+<span class="c"># only if it lingers as an orphan</span>
+Get-ClusterResource "test_new_avg" | Remove-ClusterResource</code></pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Drop the stale secondary copies</h3>
+        <div class="body">
+          <p>The old databases on the secondary are stuck in RESTORING and unusable. Drop them so automatic seeding can recreate them fresh from the primary.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">SQL · secondary</span><button class="copy-btn">Copy</button></div>
+            <pre><code><span class="c">-- run on the SECONDARY, per database</span>
+DROP DATABASE [YourDB];</code></pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Confirm prerequisites on both nodes</h3>
+        <div class="body">
+          <p>Verify the NT AUTHORITY\SYSTEM login and its three grants exist, and that the mirroring endpoints are STARTED — these are the usual reasons a freshly created AG fails to come online.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">SQL · both nodes</span><button class="copy-btn">Copy</button></div>
+            <pre><code>SELECT name, state_desc FROM sys.database_mirroring_endpoints;
+<span class="c">-- state_desc must read STARTED</span></code></pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Recreate the AG — same name, listener, and IP</h3>
+        <div class="body">
+          <p class="opt-label">Option A · SSMS</p>
+          <p>Use the <b>New Availability Group Wizard</b>. Reuse the AG name <span class="inline">test_new_avg</span>, the same listener name, and the same static IP. Choose <b>Automatic Seeding</b> so the databases re-sync from the primary.</p>
+
+          <p class="opt-label b">Option B · PowerShell (if SSMS won't run)</p>
+          <p>Edit the variables at the top to match your environment, then run on a machine with the SqlServer module. Endpoints survive the drop, so they're reused automatically.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">PowerShell</span><button class="copy-btn">Copy</button></div>
+            <pre><code>Import-Module SqlServer
+
+<span class="c"># --- adjust to your environment ---</span>
+$ag         = "test_new_avg"
+$primary    = "SQLNODE1"                 <span class="c"># use SQLNODE1\INSTANCE if named</span>
+$secondary  = "SQLNODE2"
+$domain     = "yourdomain.com"
+$port       = 5022
+$dbs        = "YourDB1","YourDB2"
+$listener   = "test_new_listener"        <span class="c"># SAME listener name as before</span>
+$listenerIp = "10.0.0.50/255.255.255.0"  <span class="c"># SAME static IP / subnet mask</span>
+$sqlVersion = 16                         <span class="c"># 16=2022, 15=2019, 14=2017, 13=2016</span>
+
+$primaryPath   = "SQLSERVER:\SQL\$primary\DEFAULT"
+$secondaryPath = "SQLSERVER:\SQL\$secondary\DEFAULT"
+
+<span class="c"># --- replica templates (automatic seeding) ---</span>
+$rep1 = New-SqlAvailabilityReplica -Name $primary `
+  -EndpointUrl "TCP://$($primary).$($domain):$port" `
+  -AvailabilityMode SynchronousCommit -FailoverMode Automatic `
+  -SeedingMode Automatic -AsTemplate -Version $sqlVersion
+
+$rep2 = New-SqlAvailabilityReplica -Name $secondary `
+  -EndpointUrl "TCP://$($secondary).$($domain):$port" `
+  -AvailabilityMode SynchronousCommit -FailoverMode Automatic `
+  -SeedingMode Automatic -AsTemplate -Version $sqlVersion
+
+<span class="c"># --- create the AG on the primary ---</span>
+New-SqlAvailabilityGroup -Name $ag -Path $primaryPath `
+  -AvailabilityReplica @($rep1,$rep2) -Database $dbs
+
+<span class="c"># --- join the secondary + allow auto-seeding to create the DBs ---</span>
+Join-SqlAvailabilityGroup -Path $secondaryPath -Name $ag
+Invoke-Sqlcmd -ServerInstance $secondary `
+  -Query "ALTER AVAILABILITY GROUP [$ag] GRANT CREATE ANY DATABASE;"
+
+<span class="c"># --- listener: SAME name + SAME static IP ---</span>
+New-SqlAvailabilityGroupListener -Name $listener -StaticIp $listenerIp `
+  -Path "$primaryPath\AvailabilityGroups\$ag"</code></pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Verify health</h3>
+        <div class="body">
+          <p>Run on the primary. Both replicas showing CONNECTED and HEALTHY means the rebuild is complete.</p>
+          <div class="cmd">
+            <div class="cmd-bar"><span class="cmd-lang">SQL · primary</span><button class="copy-btn">Copy</button></div>
+            <pre><code>SELECT ar.replica_server_name, ars.role_desc,
+       ars.connected_state_desc, ars.synchronization_health_desc
+FROM sys.dm_hadr_availability_replica_states ars
+JOIN sys.availability_replicas ar
+  ON ars.replica_id = ar.replica_id;</code></pre>
+          </div>
+        </div>
+      </li>
+
+    </ol>
+
+    <div class="note caution">
+      <p class="h">On seeding size</p>
+      <p>Automatic seeding pushes the full databases over the network and needs the bandwidth and disk headroom. For very large databases a manual backup/restore seed from the primary can be faster; for a test-sized AG, automatic seeding is simplest.</p>
+    </div>
+
+    <footer>
+      <p class="mono">Rebuild runbook · test_new_avg · prepared for incident recovery.</p>
+      <p>Assumes the primary holds the current, complete copy of the data. If the primary side is ever uncertain, stop and verify (or restore from backup) before dropping the AG.</p>
+    </footer>
+
+  </div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code = btn.closest('.cmd').querySelector('code').innerText;
+      var done = function(){ btn.textContent='Copied'; setTimeout(function(){btn.textContent='Copy';},1400); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(code).then(done).catch(function(){fallback(code,done);});
+      } else { fallback(code,done); }
+    });
+  });
+  function fallback(text, done){
+    var ta=document.createElement('textarea');
+    ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta); done();
+  }
+</script>
+</body>
+</html>
