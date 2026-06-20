@@ -1,0 +1,2 @@
+Get-ClusterGroup
+Get-ClusterResource | ft Name, State, OwnerNode, ResourceType -AutoSize
