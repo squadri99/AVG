@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSN CHECK</title>
+<style>
+  :root{
+    --ink:        #0E1D23;
+    --ink-raise:  #14282F;
+    --ink-line:   #21414A;
+    --vellum:     #DCE6E4;
+    --vellum-dim: #8FA8AC;
+    --mint:       #79D3B4;
+    --amber:      #E5A63C;
+    --rose:       #D98A8A;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Cascadia Mono", "Liberation Mono", monospace;
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box}
+
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--vellum);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.6;
+  }
+
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px 96px}
+
+  a{color:var(--mint)}
+
+  /* ---------- masthead ---------- */
+
+  .mast{padding:64px 0 40px;border-bottom:1px solid var(--ink-line)}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    margin:0 0 20px;
+  }
+
+  h1{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:clamp(38px,9vw,76px);
+    letter-spacing:-.04em;
+    line-height:.95;
+    margin:0;
+  }
+
+  h1 .dim{color:var(--ink-line)}
+
+  .thesis{
+    max-width:52ch;
+    margin:24px 0 0;
+    font-size:17px;
+    color:var(--vellum);
+  }
+
+  .errs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:28px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  .errs span{
+    border:1px solid var(--ink-line);
+    padding:4px 10px;
+    color:var(--vellum-dim);
+  }
+
+  .errs span b{color:var(--vellum);font-weight:500}
+
+  /* ---------- signature: the chain ---------- */
+
+  .chain-block{padding:48px 0 8px}
+
+  .chain{
+    display:flex;
+    align-items:stretch;
+    overflow-x:auto;
+    padding-bottom:14px;
+    gap:0;
+  }
+
+  .lnk{
+    flex:0 0 auto;
+    min-width:150px;
+    border:1px solid var(--ink-line);
+    background:var(--ink-raise);
+    padding:12px 14px;
+  }
+
+  .lnk .id{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.18em;
+    color:var(--vellum-dim);
+    text-transform:uppercase;
+  }
+
+  .lnk .lsn{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:-.01em;
+    margin-top:7px;
+    white-space:nowrap;
+  }
+
+  .lnk .lsn i{color:var(--vellum-dim);font-style:normal}
+
+  .weld{
+    flex:0 0 auto;
+    width:54px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+
+  .weld .bar{width:100%;height:1px;background:var(--mint)}
+
+  .weld .tag{
+    font-family:var(--mono);
+    font-size:9px;
+    letter-spacing:.16em;
+    color:var(--mint);
+  }
+
+  .weld.broken .bar{
+    background:none;
+    border-top:1px dashed var(--amber);
+    height:0;
+  }
+
+  .weld.broken .tag{color:var(--amber)}
+
+  .lnk.orphan{border-color:var(--amber)}
+
+  .chain-note{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--vellum-dim);
+    margin:6px 0 0;
+  }
+
+  .chain-note b{color:var(--amber);font-weight:500}
+
+  /* ---------- sections ---------- */
+
+  section{padding:52px 0 0;border-top:1px solid var(--ink-line);margin-top:52px}
+
+  .num{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    color:var(--mint);
+    display:block;
+    margin-bottom:12px;
+  }
+
+  h2{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:clamp(21px,3.4vw,28px);
+    letter-spacing:-.02em;
+    line-height:1.2;
+    margin:0 0 14px;
+  }
+
+  p{margin:0 0 16px;max-width:64ch}
+
+  .lede{color:var(--vellum)}
+
+  .quiet{color:var(--vellum-dim);font-size:15px}
+
+  code{
+    font-family:var(--mono);
+    font-size:.88em;
+    background:var(--ink-raise);
+    border:1px solid var(--ink-line);
+    padding:1px 5px;
+    white-space:nowrap;
+  }
+
+  /* ---------- rule callout ---------- */
+
+  .rule{
+    border-left:2px solid var(--mint);
+    background:var(--ink-raise);
+    padding:18px 20px;
+    margin:0 0 22px;
+  }
+
+  .rule p{margin:0;max-width:60ch}
+
+  .rule .fx{font-family:var(--mono);font-size:15px;color:var(--mint);display:block;margin-top:10px}
+
+  /* ---------- code ---------- */
+
+  figure{margin:0 0 22px}
+
+  .codehead{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    border:1px solid var(--ink-line);
+    border-bottom:none;
+    padding:8px 12px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    background:var(--ink-raise);
+  }
+
+  .codehead .where{color:var(--mint)}
+
+  button.copy{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    background:none;
+    border:1px solid var(--ink-line);
+    padding:3px 9px;
+    cursor:pointer;
+  }
+
+  button.copy:hover{color:var(--vellum);border-color:var(--vellum-dim)}
+
+  button.copy:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+
+  button.copy.done{color:var(--mint);border-color:var(--mint)}
+
+  pre{
+    margin:0;
+    border:1px solid var(--ink-line);
+    background:#0A171C;
+    padding:16px;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.62;
+    tab-size:2;
+  }
+
+  pre .k{color:var(--mint)}
+  pre .c{color:#5D7C82}
+  pre .s{color:var(--amber)}
+
+  /* ---------- tables ---------- */
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:0 0 22px;
+    font-size:14px;
+  }
+
+  th,td{
+    text-align:left;
+    padding:10px 12px;
+    border-bottom:1px solid var(--ink-line);
+    vertical-align:top;
+  }
+
+  th{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    font-weight:500;
+    border-bottom-color:var(--vellum-dim);
+  }
+
+  td.t{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+
+  td.t.ok{color:var(--mint)}
+  td.t.bad{color:var(--amber)}
+  td.t.mid{color:var(--rose)}
+
+  .foot{
+    margin-top:64px;
+    padding-top:20px;
+    border-top:1px solid var(--ink-line);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+  }
+
+  @media (max-width:620px){
+    .wrap{padding:0 18px 72px}
+    .mast{padding:40px 0 32px}
+    pre{font-size:12px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Runbook · SQL Server Always On</p>
+    <h1>LSN<span class="dim">_</span>CHECK</h1>
+    <p class="thesis">Reading log sequence numbers across availability replicas, and proving whether the log backup chain is actually intact.</p>
+    <div class="errs">
+      <span><b>35250</b> primary not active</span>
+      <span><b>3041</b> see backup app log</span>
+      <span><b>50000</b> re-raised by script</span>
+      <span><b>4214</b> no full backup exists</span>
+    </div>
+  </header>
+
+  <div class="chain-block">
+    <div class="chain">
+      <div class="lnk">
+        <div class="id">Log 01</div>
+        <div class="lsn"><i>first</i> 41000000018400001</div>
+        <div class="lsn"><i>last&nbsp;</i> 41000000021600001</div>
+      </div>
+      <div class="weld"><div class="bar"></div><div class="tag">OK</div></div>
+      <div class="lnk">
+        <div class="id">Log 02</div>
+        <div class="lsn"><i>first</i> 41000000021600001</div>
+        <div class="lsn"><i>last&nbsp;</i> 41000000024900001</div>
+      </div>
+      <div class="weld broken"><div class="bar"></div><div class="tag">GAP</div></div>
+      <div class="lnk orphan">
+        <div class="id">Log 03</div>
+        <div class="lsn"><i>first</i> 41000000031200001</div>
+        <div class="lsn"><i>last&nbsp;</i> 41000000033700001</div>
+      </div>
+    </div>
+    <p class="chain-note">Log 02 ends at …0249, Log 03 opens at …0312. <b>Restore stops at the break.</b></p>
+  </div>
+
+  <section>
+    <span class="num">01 — Where the numbers live</span>
+    <h2>Replica positions</h2>
+    <p class="lede">Run this on the <strong>primary</strong>. It is the only replica with a complete view of every other replica's position — query it from a secondary and you get meaningful values only for the local row.</p>
+    <figure>
+      <div class="codehead"><span>Replica LSN positions</span><span class="where">Run on primary</span></div>
+      <pre><span class="k">SELECT</span> ar.replica_server_name,
+       <span class="k">DB_NAME</span>(drs.database_id) <span class="k">AS</span> db_name,
+       drs.is_primary_replica,
+       drs.end_of_log_lsn,
+       drs.last_sent_lsn,
+       drs.last_received_lsn,
+       drs.last_hardened_lsn,
+       drs.last_redone_lsn,
+       drs.last_commit_lsn,
+       drs.truncation_lsn,
+       drs.log_send_queue_size,
+       drs.redo_queue_size
+<span class="k">FROM</span> sys.dm_hadr_database_replica_states drs
+<span class="k">JOIN</span> sys.availability_replicas ar <span class="k">ON</span> ar.replica_id = drs.replica_id
+<span class="k">WHERE</span> <span class="k">DB_NAME</span>(drs.database_id) = <span class="s">'YourDB'</span>
+<span class="k">ORDER BY</span> drs.is_primary_replica <span class="k">DESC</span>;</pre>
+    </figure>
+
+    <table>
+      <thead><tr><th>Column</th><th>What it tells you</th></tr></thead>
+      <tbody>
+        <tr><td class="t">end_of_log_lsn</td><td>The primary's current end of log. Every other number is measured against this.</td></tr>
+        <tr><td class="t">last_hardened_lsn</td><td>How far the secondary has flushed to disk. Primary's end of log minus this is your true data-loss exposure on failover.</td></tr>
+        <tr><td class="t">last_redone_lsn</td><td>How far redo has applied. Behind hardened means redo is lagging — delays failover time, but no data at risk.</td></tr>
+        <tr><td class="t">truncation_lsn</td><td>The point below which log space can be reused. Far behind is what's driving log growth.</td></tr>
+        <tr><td class="t">log_send_queue_size</td><td>KB of log the primary hasn't shipped yet.</td></tr>
+        <tr><td class="t">redo_queue_size</td><td>KB received but not yet applied on the secondary.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <span class="num">02 — The rule</span>
+    <h2>What makes a chain unbroken</h2>
+    <div class="rule">
+      <p>Each log backup must begin exactly where the previous one ended.</p>
+      <span class="fx">first_lsn == previous last_lsn</span>
+    </div>
+    <p>Exactly equal, not merely close. A higher <code>first_lsn</code> means log was generated that no backup captured, and recovery cannot cross that point. Nothing in SQL Server flags this for you — neither the DMVs nor msdb warn about gaps, so the check has to be run deliberately.</p>
+    <p class="quiet">The <code>database_backup_lsn</code> column is the anchor: it identifies the full backup each log ties back to. When that value changes, someone took a new full backup and started a fresh chain.</p>
+  </section>
+
+  <section>
+    <span class="num">03 — The check</span>
+    <h2>Find the gaps</h2>
+    <p class="lede">Order by <code>first_lsn</code>, never by backup date. LSN order is the real sequence — timestamps mislead across replicas with clock skew or overlapping jobs.</p>
+    <figure>
+      <div class="codehead"><span>Log chain gap check</span><span class="where">Run on every replica</span></div>
+      <pre><span class="k">WITH</span> lb <span class="k">AS</span> (
+    <span class="k">SELECT</span> database_name, backup_start_date, first_lsn, last_lsn,
+           database_backup_lsn, server_name,
+           <span class="k">LAG</span>(last_lsn) <span class="k">OVER</span> (<span class="k">PARTITION BY</span> database_name
+                                 <span class="k">ORDER BY</span> first_lsn) <span class="k">AS</span> prev_last_lsn
+    <span class="k">FROM</span> msdb.dbo.backupset
+    <span class="k">WHERE</span> type = <span class="s">'L'</span>                    <span class="c">-- log backups only</span>
+      <span class="k">AND</span> database_name = <span class="s">'YourDB'</span>
+)
+<span class="k">SELECT</span> database_name, server_name, backup_start_date,
+       prev_last_lsn, first_lsn, last_lsn,
+       <span class="k">CASE</span>
+         <span class="k">WHEN</span> prev_last_lsn <span class="k">IS NULL</span>     <span class="k">THEN</span> <span class="s">'chain start'</span>
+         <span class="k">WHEN</span> first_lsn = prev_last_lsn <span class="k">THEN</span> <span class="s">'OK'</span>
+         <span class="k">WHEN</span> first_lsn &gt; prev_last_lsn <span class="k">THEN</span> <span class="s">'GAP - chain broken'</span>
+         <span class="k">ELSE</span> <span class="s">'overlap'</span>
+       <span class="k">END</span> <span class="k">AS</span> chain_status
+<span class="k">FROM</span> lb
+<span class="k">ORDER BY</span> first_lsn;</pre>
+    </figure>
+
+    <table>
+      <thead><tr><th>Status</th><th>Meaning</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td class="t ok">OK</td><td>Contiguous with the previous backup.</td><td>Nothing.</td></tr>
+        <tr><td class="t">chain start</td><td>First log backup after a full backup.</td><td>Confirm the full backup exists and is reachable.</td></tr>
+        <tr><td class="t bad">GAP</td><td>A log backup is missing, or was taken on another node and recorded in that node's msdb.</td><td>Locate the missing file, or take a new full backup to start a fresh chain.</td></tr>
+        <tr><td class="t mid">overlap</td><td>Usually a copy-only or differently-scoped backup mixed in.</td><td>Normally harmless — confirm what produced it.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <span class="num">04 — The trap</span>
+    <h2>msdb does not replicate</h2>
+    <p class="lede">Each node only knows about backups taken on itself. If jobs have moved between replicas — or a failover happened mid-week — the gap check run on one node will report breaks that do not exist.</p>
+    <p>Run it on every replica, or pull all <code>backupset</code> rows into one table via linked servers and check the merged set. The <code>server_name</code> column shows which node produced each backup, so a chain that hops replicas is visible rather than mysterious.</p>
+    <figure>
+      <div class="codehead"><span>Backup history for one database</span><span class="where">Run per node</span></div>
+      <pre><span class="k">SELECT</span> bs.database_name, bs.type, bs.backup_start_date,
+       bs.first_lsn, bs.last_lsn, bs.database_backup_lsn,
+       bs.server_name, bmf.physical_device_name
+<span class="k">FROM</span> msdb.dbo.backupset bs
+<span class="k">JOIN</span> msdb.dbo.backupmediafamily bmf
+  <span class="k">ON</span> bmf.media_set_id = bs.media_set_id
+<span class="k">WHERE</span> bs.database_name = <span class="s">'YourDB'</span>
+<span class="k">ORDER BY</span> bs.backup_start_date <span class="k">DESC</span>;</pre>
+    </figure>
+  </section>
+
+  <section>
+    <span class="num">05 — Upstream</span>
+    <h2>When the backup never ran at all</h2>
+    <p class="lede">A chain gap on a secondary is often the symptom, not the cause. These are the checks that explain why the log backup failed in the first place.</p>
+    <figure>
+      <div class="codehead"><span>Database replica health</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">SELECT</span> d.name,
+       d.state_desc <span class="k">AS</span> db_state,
+       d.recovery_model_desc,
+       drs.synchronization_state_desc,
+       drs.is_suspended,
+       drs.suspend_reason_desc,
+       ag.name <span class="k">AS</span> ag_name
+<span class="k">FROM</span> sys.databases d
+<span class="k">LEFT JOIN</span> sys.dm_hadr_database_replica_states drs
+       <span class="k">ON</span> drs.database_id = d.database_id <span class="k">AND</span> drs.is_local = 1
+<span class="k">LEFT JOIN</span> sys.availability_groups ag
+       <span class="k">ON</span> ag.group_id = drs.group_id
+<span class="k">WHERE</span> d.name <span class="k">IN</span> (<span class="s">'DB1'</span>,<span class="s">'DB2'</span>,<span class="s">'DB3'</span>,<span class="s">'DB4'</span>);</pre>
+    </figure>
+
+    <table>
+      <thead><tr><th>Finding</th><th>Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td class="t bad">ag_name NULL here,<br>ONLINE on primary</td><td>Database was added to the AG on the primary and never joined on this replica.</td><td>Join it, or seed first if the database is absent.</td></tr>
+        <tr><td class="t">is_suspended = 1</td><td>Data movement paused — often manual maintenance never resumed.</td><td><code>ALTER DATABASE [DB] SET HADR RESUME;</code> after checking the reason.</td></tr>
+        <tr><td class="t">SIMPLE recovery</td><td>Log backups are impossible by definition.</td><td>Switch to FULL and take a fresh full backup to open the chain.</td></tr>
+        <tr><td class="t">Every database fails</td><td>Endpoint or replica-level connectivity, not a database problem.</td><td>Check <code>connected_state_desc</code> and the mirroring endpoint.</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <div class="codehead"><span>Join a database to the AG</span><span class="where">Run on secondary</span></div>
+      <pre><span class="c">-- database must already exist here, restored WITH NORECOVERY</span>
+<span class="k">ALTER DATABASE</span> [DB1] <span class="k">SET</span> HADR <span class="k">AVAILABILITY GROUP</span> = [YourAG];</pre>
+    </figure>
+
+    <figure>
+      <div class="codehead"><span>What is holding the log</span><span class="where">Run on primary</span></div>
+      <pre><span class="k">SELECT</span> name, log_reuse_wait_desc
+<span class="k">FROM</span> sys.databases
+<span class="k">WHERE</span> name <span class="k">IN</span> (<span class="s">'DB1'</span>,<span class="s">'DB2'</span>,<span class="s">'DB3'</span>,<span class="s">'DB4'</span>);</pre>
+    </figure>
+    <p class="quiet">LOG_BACKUP means log is accumulating for want of a backup. AVAILABILITY_REPLICA means an unjoined or lagging secondary is blocking truncation — a log backup alone will not release the space until the replica is healthy.</p>
+  </section>
+
+  <p class="foot">Verify against your own environment before running in production</p>
+
+</div>
+
+<script>
+document.querySelectorAll('figure').forEach(function (fig) {
+  var head = fig.querySelector('.codehead');
+  var pre  = fig.querySelector('pre');
+  if (!head || !pre) return;
+
+  var btn = document.createElement('button');
+  btn.className = 'copy';
+  btn.type = 'button';
+  btn.textContent = 'Copy';
+  head.appendChild(btn);
+
+  btn.addEventListener('click', function () {
+    var text = pre.innerText;
+    var done = function () {
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function () {
+        btn.textContent = 'Copy';
+        btn.classList.remove('done');
+      }, 1600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else {
+      fallback(text, done);
+    }
+  });
+});
+
+function fallback(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
