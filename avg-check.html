@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVG CHECK</title>
+<style>
+  :root{
+    --ink:        #0E1D23;
+    --ink-raise:  #14282F;
+    --ink-line:   #21414A;
+    --vellum:     #DCE6E4;
+    --vellum-dim: #8FA8AC;
+    --mint:       #79D3B4;
+    --amber:      #E5A63C;
+    --rose:       #D98A8A;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Cascadia Mono", "Liberation Mono", monospace;
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--vellum);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.6;
+  }
+
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px 96px}
+  a{color:var(--mint)}
+
+  /* ---------- masthead ---------- */
+
+  .mast{padding:64px 0 40px;border-bottom:1px solid var(--ink-line)}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    margin:0 0 20px;
+  }
+
+  h1{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:clamp(38px,9vw,76px);
+    letter-spacing:-.04em;
+    line-height:.95;
+    margin:0;
+  }
+
+  h1 .dim{color:var(--ink-line)}
+
+  .sub{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    margin:14px 0 0;
+  }
+
+  .thesis{max-width:52ch;margin:20px 0 0;font-size:17px}
+
+  .errs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:28px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  .errs span{border:1px solid var(--ink-line);padding:4px 10px;color:var(--vellum-dim)}
+  .errs span b{color:var(--vellum);font-weight:500}
+
+  /* ---------- signature: triage fork ---------- */
+
+  .fork{padding:44px 0 4px}
+
+  .fork svg{width:100%;height:auto;display:block}
+
+  .fork-note{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--vellum-dim);
+    margin:10px 0 0;
+    border-top:1px solid var(--ink-line);
+    padding-top:12px;
+  }
+
+  .fork-note b{color:var(--mint);font-weight:500}
+
+  /* ---------- sections ---------- */
+
+  section{padding:52px 0 0;border-top:1px solid var(--ink-line);margin-top:52px}
+
+  .num{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    color:var(--mint);
+    display:block;
+    margin-bottom:12px;
+  }
+
+  h2{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:clamp(21px,3.4vw,28px);
+    letter-spacing:-.02em;
+    line-height:1.2;
+    margin:0 0 14px;
+  }
+
+  h3{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:15px;
+    letter-spacing:-.01em;
+    margin:26px 0 10px;
+  }
+
+  p{margin:0 0 16px;max-width:64ch}
+  .lede{color:var(--vellum)}
+  .quiet{color:var(--vellum-dim);font-size:15px}
+
+  code{
+    font-family:var(--mono);
+    font-size:.88em;
+    background:var(--ink-raise);
+    border:1px solid var(--ink-line);
+    padding:1px 5px;
+  }
+
+  .path{
+    font-family:var(--mono);
+    font-size:12.5px;
+    background:var(--ink-raise);
+    border:1px solid var(--ink-line);
+    padding:10px 12px;
+    margin:0 0 16px;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+
+  .rule{
+    border-left:2px solid var(--mint);
+    background:var(--ink-raise);
+    padding:18px 20px;
+    margin:0 0 22px;
+  }
+
+  .rule.warn{border-left-color:var(--amber)}
+  .rule p{margin:0;max-width:60ch}
+  .rule .fx{font-family:var(--mono);font-size:15px;color:var(--mint);display:block;margin-top:10px}
+  .rule.warn .fx{color:var(--amber)}
+
+  /* ---------- code ---------- */
+
+  figure{margin:0 0 22px}
+
+  .codehead{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    border:1px solid var(--ink-line);
+    border-bottom:none;
+    padding:8px 12px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    background:var(--ink-raise);
+  }
+
+  .codehead .where{color:var(--mint)}
+
+  button.copy{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    background:none;
+    border:1px solid var(--ink-line);
+    padding:3px 9px;
+    cursor:pointer;
+  }
+
+  button.copy:hover{color:var(--vellum);border-color:var(--vellum-dim)}
+  button.copy:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+  button.copy.done{color:var(--mint);border-color:var(--mint)}
+
+  pre{
+    margin:0;
+    border:1px solid var(--ink-line);
+    background:#0A171C;
+    padding:16px;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.62;
+    tab-size:2;
+  }
+
+  pre .k{color:var(--mint)}
+  pre .c{color:#5D7C82}
+  pre .s{color:var(--amber)}
+
+  /* ---------- tables ---------- */
+
+  table{width:100%;border-collapse:collapse;margin:0 0 22px;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--ink-line);vertical-align:top}
+
+  th{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    font-weight:500;
+    border-bottom-color:var(--vellum-dim);
+  }
+
+  td.t{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  td.t.ok{color:var(--mint)}
+  td.t.bad{color:var(--amber)}
+  td.t.mid{color:var(--rose)}
+
+  /* ---------- causal chain ---------- */
+
+  .chainlist{list-style:none;margin:0 0 22px;padding:0;counter-reset:step}
+
+  .chainlist li{
+    counter-increment:step;
+    display:grid;
+    grid-template-columns:34px 1fr;
+    gap:14px;
+    padding:11px 0;
+    border-bottom:1px solid var(--ink-line);
+    align-items:baseline;
+  }
+
+  .chainlist li::before{
+    content:counter(step,decimal-leading-zero);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.1em;
+    color:var(--vellum-dim);
+  }
+
+  .chainlist li.root::before{color:var(--amber)}
+  .chainlist li b{font-weight:500;font-family:var(--mono);font-size:13px}
+  .chainlist li.root b{color:var(--amber)}
+  .chainlist li span{display:block;color:var(--vellum-dim);font-size:14px;margin-top:2px}
+
+  .foot{
+    margin-top:64px;
+    padding-top:20px;
+    border-top:1px solid var(--ink-line);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+  }
+
+  @media (max-width:620px){
+    .wrap{padding:0 18px 72px}
+    .mast{padding:40px 0 32px}
+    pre{font-size:12px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Runbook · SQL Server Always On</p>
+    <h1>AVG<span class="dim">_</span>CHECK</h1>
+    <p class="sub">Availability group · secondary replica diagnostics</p>
+    <p class="thesis">Working out which layer actually failed when log backups stop on a secondary, and proving it before you change anything.</p>
+    <div class="errs">
+      <span><b>35250</b> primary not active</span>
+      <span><b>3041</b> backup failed</span>
+      <span><b>50000</b> re-raised</span>
+      <span><b>1408</b> join failed</span>
+    </div>
+  </header>
+
+  <div class="fork">
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Triage fork: count how many databases fail to choose the diagnostic layer">
+      <g font-family="ui-monospace, SF Mono, Menlo, Consolas, monospace">
+
+        <rect x="1" y="18" width="196" height="52" fill="var(--ink-raise)" stroke="var(--ink-line)"/>
+        <text x="16" y="40" font-size="11" letter-spacing="2" fill="var(--vellum-dim)">START</text>
+        <text x="16" y="59" font-size="13" fill="var(--vellum)">How many are failing?</text>
+
+        <path d="M197 44 H 250 V 96 H 300" fill="none" stroke="var(--amber)" stroke-width="1"/>
+        <path d="M197 44 H 250 V 196 H 300" fill="none" stroke="var(--mint)" stroke-width="1"/>
+
+        <text x="258" y="88" font-size="11" fill="var(--amber)">ALL</text>
+        <text x="258" y="188" font-size="11" fill="var(--mint)">SOME</text>
+
+        <rect x="300" y="70" width="399" height="52" fill="var(--ink-raise)" stroke="var(--amber)"/>
+        <text x="316" y="92" font-size="11" letter-spacing="2" fill="var(--amber)">INSTANCE LAYER</text>
+        <text x="316" y="111" font-size="13" fill="var(--vellum)">Endpoint, port, service account, quorum</text>
+
+        <rect x="300" y="170" width="399" height="52" fill="var(--ink-raise)" stroke="var(--mint)"/>
+        <text x="316" y="192" font-size="11" letter-spacing="2" fill="var(--mint)">DATABASE LAYER</text>
+        <text x="316" y="211" font-size="13" fill="var(--vellum)">Membership, join state, suspension</text>
+
+      </g>
+    </svg>
+    <p class="fork-note">The endpoint is per instance, not per database. <b>If some databases succeed, connectivity is proven — stop testing it.</b></p>
+  </div>
+
+  <section>
+    <span class="num">01 — Triage</span>
+    <h2>Count before you diagnose</h2>
+    <p class="lede">The scope of the failure identifies the layer, and it does so more reliably than any single error message. A mirroring endpoint serves the whole instance — it cannot be selectively broken for four databases out of forty.</p>
+
+    <div class="rule">
+      <p>Successful backups on other databases are positive evidence that the replica connection is live right now.</p>
+      <span class="fx">Some succeeding → skip the network entirely</span>
+    </div>
+
+    <p>This matters because 35250 reads like a connectivity error and sends people to firewalls and endpoints first. A failed telnet from the wrong host, or to a port the AG does not use, then appears to confirm a theory that the evidence already ruled out.</p>
+
+    <figure>
+      <div class="codehead"><span>Which databases are actually failing</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">SELECT</span> database_name, <span class="k">MAX</span>(backup_finish_date) <span class="k">AS</span> last_log_backup
+<span class="k">FROM</span> msdb.dbo.backupset
+<span class="k">WHERE</span> type = <span class="s">'L'</span>
+<span class="k">GROUP BY</span> database_name
+<span class="k">ORDER BY</span> last_log_backup;</pre>
+    </figure>
+
+    <p class="quiet">Databases clustered at an old timestamp while the rest are current: that timestamp is your event. Databases absent from the list entirely were never backed up on this node at all.</p>
+  </section>
+
+  <section>
+    <span class="num">02 — Instance layer</span>
+    <h2>When every database fails</h2>
+    <p class="lede">Only relevant if the whole instance is affected. Work outward from SQL, not inward from the network.</p>
+
+    <figure>
+      <div class="codehead"><span>Replica connection state</span><span class="where">Run on both nodes</span></div>
+      <pre><span class="k">SELECT</span> ar.replica_server_name,
+       ars.role_desc,
+       ars.connected_state_desc,
+       ars.operational_state_desc,
+       ars.synchronization_health_desc,
+       ars.last_connect_error_number,
+       ars.last_connect_error_description,
+       ars.last_connect_error_timestamp
+<span class="k">FROM</span> sys.dm_hadr_availability_replica_states ars
+<span class="k">JOIN</span> sys.availability_replicas ar <span class="k">ON</span> ar.replica_id = ars.replica_id;</pre>
+    </figure>
+
+    <p><code>last_connect_error_description</code> is the field that usually names the fault outright. Compare both nodes — if the primary sees the secondary as connected but not the reverse, the problem is one-way routing, not a dead endpoint.</p>
+
+    <figure>
+      <div class="codehead"><span>Endpoint state and port</span><span class="where">Run on both nodes</span></div>
+      <pre><span class="k">SELECT</span> name, state_desc, port, is_encryption_enabled, connection_auth_desc
+<span class="k">FROM</span> sys.tcp_endpoints
+<span class="k">WHERE</span> type_desc = <span class="s">'DATABASE_MIRRORING'</span>;
+
+<span class="c">-- if STOPPED</span>
+<span class="k">ALTER ENDPOINT</span> [Hadr_endpoint] <span class="k">STATE</span> = STARTED;</pre>
+    </figure>
+
+    <figure>
+      <div class="codehead"><span>Reachability — from the secondary's own OS</span><span class="where">On the node</span></div>
+      <pre><span class="c"># use the port from sys.tcp_endpoints, do not assume 5022</span>
+Test-NetConnection -ComputerName PRIMARYSERVER -Port 5022</pre>
+    </figure>
+
+    <p class="quiet">Node-to-node rules are usually scoped to the cluster members, so a test from a workstation or jump box fails by design. Only a test from the replica itself means anything.</p>
+
+    <figure>
+      <div class="codehead"><span>Endpoint permissions and service accounts</span><span class="where">Run on both nodes</span></div>
+      <pre><span class="k">SELECT</span> e.name, p.permission_name, p.state_desc,
+       <span class="k">SUSER_NAME</span>(p.grantee_principal_id) <span class="k">AS</span> grantee
+<span class="k">FROM</span> sys.server_permissions p
+<span class="k">JOIN</span> sys.tcp_endpoints e <span class="k">ON</span> e.endpoint_id = p.major_id
+<span class="k">WHERE</span> p.class_desc = <span class="s">'ENDPOINT'</span>;
+
+<span class="k">SELECT</span> servicename, service_account <span class="k">FROM</span> sys.dm_server_services;
+
+<span class="c">-- if the account changed and lost its grant</span>
+<span class="k">GRANT CONNECT ON ENDPOINT</span>::[Hadr_endpoint] <span class="k">TO</span> [DOMAIN\svc_sql];</pre>
+    </figure>
+
+    <p class="quiet">If <code>connection_auth_desc</code> shows CERTIFICATE, check expiry — endpoint certificates lapse quietly and take the connection with them. <code>SELECT name, expiry_date FROM sys.certificates;</code></p>
+  </section>
+
+  <section>
+    <span class="num">03 — Database layer</span>
+    <h2>When only some fail</h2>
+    <p class="lede">Run this on the secondary. The LEFT JOIN matters: it lists every database whether or not it participates in an AG here, so a missing replica row shows as NULL rather than vanishing from the result.</p>
+
+    <figure>
+      <div class="codehead"><span>Per-database replica state</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">SELECT</span> d.name,
+       d.state_desc <span class="k">AS</span> db_state,
+       d.recovery_model_desc,
+       drs.synchronization_state_desc,
+       drs.synchronization_health_desc,
+       drs.is_suspended,
+       drs.suspend_reason_desc,
+       drs.last_hardened_time,
+       ag.name <span class="k">AS</span> ag_name
+<span class="k">FROM</span> sys.databases d
+<span class="k">LEFT JOIN</span> sys.dm_hadr_database_replica_states drs
+       <span class="k">ON</span> drs.database_id = d.database_id <span class="k">AND</span> drs.is_local = 1
+<span class="k">LEFT JOIN</span> sys.availability_groups ag
+       <span class="k">ON</span> ag.group_id = drs.group_id
+<span class="k">WHERE</span> d.name <span class="k">IN</span> (<span class="s">'DB1'</span>,<span class="s">'DB2'</span>,<span class="s">'DB3'</span>,<span class="s">'DB4'</span>);</pre>
+    </figure>
+
+    <table>
+      <thead><tr><th>Finding</th><th>Meaning</th><th>Next</th></tr></thead>
+      <tbody>
+        <tr><td class="t bad">ag_name NULL here,<br>ONLINE on primary</td><td>Not joined on this replica. The backup job targets a database with no local AG session, so it cannot negotiate the log chain.</td><td>Section 04, then 05.</td></tr>
+        <tr><td class="t">is_suspended = 1</td><td>Data movement paused. <code>suspend_reason_desc</code> says whether a person or an error did it.</td><td><code>SET HADR RESUME</code> after fixing the reason.</td></tr>
+        <tr><td class="t">NOT SYNCHRONIZING,<br>is_suspended = 0</td><td>Session broken rather than paused — stalled redo or a failed seed.</td><td>Check AG health on the primary.</td></tr>
+        <tr><td class="t mid">SIMPLE recovery</td><td>Log backups are impossible by definition.</td><td>Switch to FULL, take a full backup.</td></tr>
+        <tr><td class="t ok">All healthy</td><td>The AG is fine; the job scope is wrong.</td><td>Check job parameters — <code>USER_DATABASES</code> catches non-members.</td></tr>
+      </tbody>
+    </table>
+
+    <p class="quiet"><code>suspend_reason_desc</code> is NULL whenever <code>is_suspended = 0</code>. A NULL there is normal and says nothing on its own.</p>
+  </section>
+
+  <section>
+    <span class="num">04 — Confirm</span>
+    <h2>Expectation versus reality</h2>
+    <p class="lede">A NULL from one query is a hint, not proof. This compares what the cluster believes should exist on this node against what actually does — an independent confirmation from different metadata.</p>
+
+    <figure>
+      <div class="codehead"><span>Cluster view vs local databases</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">SELECT</span> adc.group_database_id,
+       adc.database_name,
+       ag.name <span class="k">AS</span> ag_name,
+       <span class="k">DB_ID</span>(adc.database_name) <span class="k">AS</span> local_db_id,
+       d.state_desc <span class="k">AS</span> local_state
+<span class="k">FROM</span> sys.availability_databases_cluster adc
+<span class="k">JOIN</span> sys.availability_groups ag <span class="k">ON</span> ag.group_id = adc.group_id
+<span class="k">LEFT JOIN</span> sys.databases d <span class="k">ON</span> d.name = adc.database_name
+<span class="k">ORDER BY</span> ag.name, adc.database_name;</pre>
+    </figure>
+
+    <table>
+      <thead><tr><th>Result</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td class="t bad">local_db_id NULL</td><td>The AG expects the database here and it does not exist. Needs seeding, then joining.</td></tr>
+        <tr><td class="t bad">local_state RESTORING</td><td>Present and restored WITH NORECOVERY, never joined. One statement to fix.</td></tr>
+        <tr><td class="t mid">local_state ONLINE</td><td>Recovered locally — an independent copy, not a replica. Drop and reseed; do not attempt to join.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="rule warn">
+      <p>Nobody has to remove a database for it to leave an AG on one replica.</p>
+      <span class="fx">A restore silently drops AG membership on that node</span>
+    </div>
+
+    <p>Common ways this happens without anyone doing it deliberately: a refresh or point-in-time restore on the secondary that was never re-joined; automatic seeding that failed partway; the secondary rebuilt and databases restored back without membership; or a replica added to the AG after the databases were, so the join never ran for those.</p>
+
+    <p class="quiet"><code>group_database_id</code> is the identifier that stays constant across replicas. <code>database_id</code> is local to each instance — never carry one node's ID to another.</p>
+  </section>
+
+  <section>
+    <span class="num">05 — Repair</span>
+    <h2>Join, seed, or reseed</h2>
+
+    <h3>Already present as RESTORING</h3>
+    <figure>
+      <div class="codehead"><span>Join to the availability group</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">ALTER DATABASE</span> [DB1] <span class="k">SET</span> HADR <span class="k">AVAILABILITY GROUP</span> = [YourAG];</pre>
+    </figure>
+    <p class="quiet">Re-run the section 03 query afterwards — state should move to SYNCHRONIZING, then SYNCHRONIZED.</p>
+
+    <h3>Absent — automatic seeding</h3>
+    <figure>
+      <div class="codehead"><span>Enable seeding to this replica</span><span class="where">Run on primary</span></div>
+      <pre><span class="k">ALTER AVAILABILITY GROUP</span> [YourAG]
+<span class="k">MODIFY REPLICA ON</span> N<span class="s">'SECONDARYSERVER'</span>
+<span class="k">WITH</span> (SEEDING_MODE = AUTOMATIC);</pre>
+    </figure>
+
+    <figure>
+      <div class="codehead"><span>Permit the AG to create databases, then watch</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">ALTER AVAILABILITY GROUP</span> [YourAG] <span class="k">GRANT CREATE ANY DATABASE</span>;
+
+<span class="k">SELECT</span> * <span class="k">FROM</span> sys.dm_hadr_automatic_seeding;</pre>
+    </figure>
+
+    <p class="quiet">Seeding pushes a full copy across the network. Schedule it off-hours for large databases.</p>
+
+    <h3>Absent — manual seeding</h3>
+    <p>Full backup and log backup from the primary, restore both on the secondary <code>WITH NORECOVERY</code>, then join as above. Use this when automatic seeding is unavailable or the network path cannot take the load.</p>
+  </section>
+
+  <section>
+    <span class="num">06 — Protect</span>
+    <h2>Before you fix anything</h2>
+    <p class="lede">While the replica is broken, no log backups are happening for those databases. The log on the primary keeps growing and the recovery point keeps drifting.</p>
+
+    <figure>
+      <div class="codehead"><span>What is holding the log</span><span class="where">Run on primary</span></div>
+      <pre><span class="k">SELECT</span> name, log_reuse_wait_desc, recovery_model_desc
+<span class="k">FROM</span> sys.databases
+<span class="k">WHERE</span> name <span class="k">IN</span> (<span class="s">'DB1'</span>,<span class="s">'DB2'</span>,<span class="s">'DB3'</span>,<span class="s">'DB4'</span>);</pre>
+    </figure>
+
+    <table>
+      <thead><tr><th>log_reuse_wait_desc</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="t bad">LOG_BACKUP</td><td>Log is accumulating for want of a backup. Run log backups on the primary now, independent of the AG work.</td></tr>
+        <tr><td class="t bad">AVAILABILITY_REPLICA</td><td>The unjoined or lagging secondary is blocking truncation. A log backup alone will not release space until the replica is healthy.</td></tr>
+        <tr><td class="t ok">NOTHING</td><td>Log is free to reuse.</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <div class="codehead"><span>Log file write latency</span><span class="where">Run on affected node</span></div>
+      <pre><span class="k">SELECT</span> <span class="k">DB_NAME</span>(vfs.database_id) <span class="k">AS</span> [Database],
+       mf.name <span class="k">AS</span> [Logical Name],
+       <span class="k">CAST</span>(vfs.io_stall_write_ms * 1.0
+            / <span class="k">NULLIF</span>(vfs.num_of_writes, 0) <span class="k">AS</span> <span class="k">DECIMAL</span>(10,2)) <span class="k">AS</span> [Avg Write ms],
+       vfs.num_of_writes,
+       <span class="k">CAST</span>(vfs.size_on_disk_bytes / 1048576.0 <span class="k">AS</span> <span class="k">DECIMAL</span>(18,1)) <span class="k">AS</span> [Size MB],
+       mf.physical_name
+<span class="k">FROM</span> sys.dm_io_virtual_file_stats(<span class="k">NULL</span>, <span class="k">NULL</span>) vfs
+<span class="k">JOIN</span> sys.master_files mf
+  <span class="k">ON</span> mf.database_id = vfs.database_id <span class="k">AND</span> mf.file_id = vfs.file_id
+<span class="k">WHERE</span> mf.type_desc = <span class="s">'LOG'</span>
+<span class="k">ORDER BY</span> [Avg Write ms] <span class="k">DESC</span>;</pre>
+    </figure>
+
+    <p class="quiet">These counters are cumulative since instance start, not a time window — a bad night averages away across weeks of uptime. Under 5 ms is healthy for log writes, above 20 ms is a real problem. For a specific window, snapshot the DMV, wait, and subtract.</p>
+  </section>
+
+  <section>
+    <span class="num">07 — Forensics</span>
+    <h2>Finding when it happened</h2>
+    <p class="lede">Work from a known timestamp outwards. Searching days of logs blind is slow; searching ten minutes around a confirmed event is quick.</p>
+
+    <table>
+      <thead><tr><th>Order</th><th>Source</th><th>Reaches back</th></tr></thead>
+      <tbody>
+        <tr><td class="t ok">First</td><td>msdb.dbo.backupset — last successful backup per database</td><td>Indefinite unless purged</td></tr>
+        <tr><td class="t">Then</td><td>Default trace — restores, ALTER DATABASE, with login and host</td><td>5 × 20 MB files</td></tr>
+        <tr><td class="t">Then</td><td>AlwaysOn_health .xel — AG DDL, suspend/resume, role changes</td><td>5 × 5 MB roll</td></tr>
+        <tr><td class="t">Last</td><td>SQL error log archives — at risk after service restarts</td><td>6 archives</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <div class="codehead"><span>Default trace — who restored what</span><span class="where">Run on secondary</span></div>
+      <pre><span class="k">DECLARE</span> @path <span class="k">NVARCHAR</span>(260);
+<span class="k">SELECT</span> @path = <span class="k">REVERSE</span>(<span class="k">SUBSTRING</span>(<span class="k">REVERSE</span>(path),
+                  <span class="k">CHARINDEX</span>(<span class="s">'\'</span>, <span class="k">REVERSE</span>(path)), 260)) + N<span class="s">'log.trc'</span>
+<span class="k">FROM</span> sys.traces <span class="k">WHERE</span> is_default = 1;
+
+<span class="k">SELECT</span> StartTime, DatabaseName, LoginName, HostName,
+       ApplicationName, TextData, EventClass
+<span class="k">FROM</span> sys.fn_trace_gettable(@path, <span class="k">DEFAULT</span>)
+<span class="k">WHERE</span> StartTime &gt; <span class="k">DATEADD</span>(<span class="k">DAY</span>, -3, <span class="k">GETDATE</span>())
+  <span class="k">AND</span> DatabaseName <span class="k">IN</span> (<span class="s">'DB1'</span>,<span class="s">'DB2'</span>,<span class="s">'DB3'</span>,<span class="s">'DB4'</span>)
+<span class="k">ORDER BY</span> StartTime <span class="k">DESC</span>;</pre>
+    </figure>
+
+    <p class="quiet">The default trace is the only one of these that records <code>LoginName</code> and <code>HostName</code> — who did it and from where.</p>
+
+    <div class="rule warn">
+      <p>Every AG state change writes new extended events and pushes older ones out.</p>
+      <span class="fx">Copy AlwaysOn_health*.xel aside before you start repairing</span>
+    </div>
+  </section>
+
+  <section>
+    <span class="num">08 — Reference</span>
+    <h2>One cause, five error numbers</h2>
+    <p class="lede">The shape of a typical unjoined-database failure, from root to what the on-call engineer actually sees.</p>
+
+    <ol class="chainlist">
+      <li class="root"><b>Database not joined on this replica</b><span>Added on the primary, or dropped out via a restore, and never joined here.</span></li>
+      <li><b>Backup job targets it by name</b><span>Job scope such as USER_DATABASES includes databases that are not local AG members.</span></li>
+      <li><b>Error 35250</b><span>Log backup cannot reach a primary replica for that database, so it cannot negotiate the log chain.</span></li>
+      <li><b>Error 3041</b><span>Backup operation aborts. A summary only — carries no diagnostic detail of its own.</span></li>
+      <li><b>Message 50000, severity 16</b><span>Maintenance script catches the failure and re-raises the text, discarding the original error number.</span></li>
+      <li><b>Agent step reports failure</b><span>The same event recorded a second time, in a different place.</span></li>
+    </ol>
+
+    <p class="quiet">Only the first line needs fixing. Everything below it resolves on its own once the database is joined.</p>
+  </section>
+
+  <p class="foot">Verify against your own environment before running in production</p>
+
+</div>
+
+<script>
+document.querySelectorAll('figure').forEach(function (fig) {
+  var head = fig.querySelector('.codehead');
+  var pre  = fig.querySelector('pre');
+  if (!head || !pre) return;
+
+  var btn = document.createElement('button');
+  btn.className = 'copy';
+  btn.type = 'button';
+  btn.textContent = 'Copy';
+  head.appendChild(btn);
+
+  btn.addEventListener('click', function () {
+    var text = pre.innerText;
+    var done = function () {
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function () {
+        btn.textContent = 'Copy';
+        btn.classList.remove('done');
+      }, 1600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else {
+      fallback(text, done);
+    }
+  });
+});
+
+function fallback(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
