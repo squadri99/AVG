@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERROR LOG CHECK</title>
+<style>
+  :root{
+    --ink:        #0E1D23;
+    --ink-raise:  #14282F;
+    --ink-line:   #21414A;
+    --vellum:     #DCE6E4;
+    --vellum-dim: #8FA8AC;
+    --mint:       #79D3B4;
+    --amber:      #E5A63C;
+    --rose:       #D98A8A;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Cascadia Mono", "Liberation Mono", monospace;
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--vellum);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.6;
+  }
+
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px 96px}
+
+  a{color:var(--mint)}
+
+  /* ---------- masthead ---------- */
+
+  .mast{padding:64px 0 40px;border-bottom:1px solid var(--ink-line)}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    margin:0 0 20px;
+  }
+
+  h1{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:clamp(30px,7.4vw,64px);
+    letter-spacing:-.04em;
+    line-height:.95;
+    margin:0;
+  }
+
+  h1 .dim{color:var(--ink-line)}
+
+  .thesis{max-width:52ch;margin:24px 0 0;font-size:17px}
+
+  .errs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:28px;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  .errs span{
+    border:1px solid var(--ink-line);
+    padding:4px 10px;
+    color:var(--vellum-dim);
+  }
+
+  .errs span b{color:var(--vellum);font-weight:500}
+
+  /* ---------- signature: retention gauge ---------- */
+
+  .gauge{padding:44px 0 8px}
+
+  .gauge-head{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    border-bottom:1px solid var(--ink-line);
+    padding-bottom:8px;
+    margin-bottom:14px;
+  }
+
+  .src{
+    display:grid;
+    grid-template-columns:200px 1fr 96px;
+    align-items:center;
+    gap:14px;
+    padding:7px 0;
+  }
+
+  .src .nm{font-family:var(--mono);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .src .track{height:9px;background:var(--ink-raise);border:1px solid var(--ink-line);position:relative}
+
+  .src .fill{position:absolute;left:0;top:0;bottom:0;background:var(--mint);opacity:.65}
+
+  .src .fill.short{background:var(--amber)}
+
+  .src .len{font-family:var(--mono);font-size:11px;color:var(--vellum-dim);text-align:right;white-space:nowrap}
+
+  .gauge-note{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--vellum-dim);
+    margin:14px 0 0;
+    border-top:1px solid var(--ink-line);
+    padding-top:12px;
+  }
+
+  .gauge-note b{color:var(--amber);font-weight:500}
+
+  /* ---------- sections ---------- */
+
+  section{padding:52px 0 0;border-top:1px solid var(--ink-line);margin-top:52px}
+
+  .num{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    color:var(--mint);
+    display:block;
+    margin-bottom:12px;
+  }
+
+  h2{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:clamp(21px,3.4vw,28px);
+    letter-spacing:-.02em;
+    line-height:1.2;
+    margin:0 0 14px;
+  }
+
+  h3{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:15px;
+    letter-spacing:-.01em;
+    margin:26px 0 10px;
+    color:var(--vellum);
+  }
+
+  p{margin:0 0 16px;max-width:64ch}
+  .lede{color:var(--vellum)}
+  .quiet{color:var(--vellum-dim);font-size:15px}
+
+  code{
+    font-family:var(--mono);
+    font-size:.88em;
+    background:var(--ink-raise);
+    border:1px solid var(--ink-line);
+    padding:1px 5px;
+  }
+
+  .path{
+    font-family:var(--mono);
+    font-size:12.5px;
+    background:var(--ink-raise);
+    border:1px solid var(--ink-line);
+    padding:10px 12px;
+    margin:0 0 16px;
+    overflow-x:auto;
+    white-space:nowrap;
+    color:var(--vellum);
+  }
+
+  .rule{
+    border-left:2px solid var(--amber);
+    background:var(--ink-raise);
+    padding:18px 20px;
+    margin:0 0 22px;
+  }
+
+  .rule p{margin:0;max-width:60ch}
+  .rule .fx{font-family:var(--mono);font-size:15px;color:var(--amber);display:block;margin-top:10px}
+
+  /* ---------- code ---------- */
+
+  figure{margin:0 0 22px}
+
+  .codehead{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    border:1px solid var(--ink-line);
+    border-bottom:none;
+    padding:8px 12px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    background:var(--ink-raise);
+  }
+
+  .codehead .where{color:var(--mint)}
+
+  button.copy{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    background:none;
+    border:1px solid var(--ink-line);
+    padding:3px 9px;
+    cursor:pointer;
+  }
+
+  button.copy:hover{color:var(--vellum);border-color:var(--vellum-dim)}
+  button.copy:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+  button.copy.done{color:var(--mint);border-color:var(--mint)}
+
+  pre{
+    margin:0;
+    border:1px solid var(--ink-line);
+    background:#0A171C;
+    padding:16px;
+    overflow-x:auto;
+    font-family:var(--mono);
+    font-size:13px;
+    line-height:1.62;
+    tab-size:2;
+  }
+
+  pre .k{color:var(--mint)}
+  pre .c{color:#5D7C82}
+  pre .s{color:var(--amber)}
+
+  /* ---------- tables ---------- */
+
+  table{width:100%;border-collapse:collapse;margin:0 0 22px;font-size:14px}
+
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--ink-line);vertical-align:top}
+
+  th{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+    font-weight:500;
+    border-bottom-color:var(--vellum-dim);
+  }
+
+  td.t{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  td.t.ok{color:var(--mint)}
+  td.t.bad{color:var(--amber)}
+  td.t.mid{color:var(--rose)}
+
+  .foot{
+    margin-top:64px;
+    padding-top:20px;
+    border-top:1px solid var(--ink-line);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--vellum-dim);
+  }
+
+  @media (max-width:620px){
+    .wrap{padding:0 18px 72px}
+    .mast{padding:40px 0 32px}
+    pre{font-size:12px}
+    .src{grid-template-columns:1fr;gap:5px}
+    .src .len{text-align:left}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Runbook · SQL Server Always On</p>
+    <h1>ERROR<span class="dim">_</span>LOG<span class="dim">_</span>CHECK</h1>
+    <p class="thesis">Finding the real error when the message you were handed is only a wrapper — and knowing which log still holds the evidence.</p>
+    <div class="errs">
+      <span><b>50000</b> raised by user code</span>
+      <span><b>3041</b> summary, not a cause</span>
+      <span><b>35250</b> primary not active</span>
+      <span><b>1480</b> role change</span>
+    </div>
+  </header>
+
+  <div class="gauge">
+    <div class="gauge-head"><span>Source</span><span>Typical reach back</span></div>
+
+    <div class="src">
+      <div class="nm">ERRORLOG (current)</div>
+      <div class="track"><div class="fill short" style="width:9%"></div></div>
+      <div class="len">since restart</div>
+    </div>
+    <div class="src">
+      <div class="nm">ERRORLOG.1 – .N</div>
+      <div class="track"><div class="fill short" style="width:22%"></div></div>
+      <div class="len">6 archives</div>
+    </div>
+    <div class="src">
+      <div class="nm">CommandLog (Ola)</div>
+      <div class="track"><div class="fill" style="width:70%"></div></div>
+      <div class="len">until purged</div>
+    </div>
+    <div class="src">
+      <div class="nm">AlwaysOn_health .xel</div>
+      <div class="track"><div class="fill" style="width:58%"></div></div>
+      <div class="len">5 × 5 MB roll</div>
+    </div>
+    <div class="src">
+      <div class="nm">FailoverClustering events</div>
+      <div class="track"><div class="fill" style="width:45%"></div></div>
+      <div class="len">log size cap</div>
+    </div>
+    <div class="src">
+      <div class="nm">Cluster log (generated)</div>
+      <div class="track"><div class="fill short" style="width:16%"></div></div>
+      <div class="len">rolling window</div>
+    </div>
+
+    <p class="gauge-note">Every service restart consumes an archive slot. <b>Search oldest-reaching sources first when the event is more than a few days back.</b></p>
+  </div>
+
+  <section>
+    <span class="num">01 — Unwrap</span>
+    <h2>The number you were given is not the error</h2>
+    <div class="rule">
+      <p>Message 50000 means user code re-raised something. Error 3041 is a summary logged <em>after</em> the failure.</p>
+      <span class="fx">The real error sits immediately above the 3041</span>
+    </div>
+    <p class="lede">Find the 3041, note its timestamp, then read the entries just before it. The specific failure is almost always within a line or two.</p>
+
+    <figure>
+      <div class="codehead"><span>Locate the summary error</span><span class="where">Run on affected node</span></div>
+      <pre><span class="k">EXEC</span> xp_readerrorlog 0, 1, <span class="s">N'3041'</span>;</pre>
+    </figure>
+
+    <figure>
+      <div class="codehead"><span>Read the surrounding window</span><span class="where">Run on affected node</span></div>
+      <pre><span class="c">-- file, type, search1, search2, start, end</span>
+<span class="k">EXEC</span> xp_readerrorlog 0, 1, <span class="k">NULL</span>, <span class="k">NULL</span>,
+     <span class="s">'2026-08-04 02:00'</span>, <span class="s">'2026-08-04 02:15'</span>;</pre>
+    </figure>
+
+    <p class="quiet">Two search strings AND together, which narrows fast: <code>EXEC xp_readerrorlog 0, 1, N'BACKUP', N'YourDB';</code></p>
+
+    <h3>If a third-party tool drives the backup</h3>
+    <p>Look for <code>SQLVDI:</code> lines near the failure. Their presence means the detail genuinely lives in the vendor's log — Veeam, Commvault, NetBackup, Rubrik, LiteSpeed — not in SQL Server. A common trap there: log backups on a secondary cannot be COPY_ONLY, but many tools issue copy-only by default.</p>
+  </section>
+
+  <section>
+    <span class="num">02 — Archives</span>
+    <h2>Reading ERRORLOG.N</h2>
+    <p class="lede">Archived logs are plain text despite having no extension. Current is <code>ERRORLOG</code>, previous is <code>ERRORLOG.1</code>, and the count rolls on every service restart or <code>sp_cycle_errorlog</code>.</p>
+
+    <figure>
+      <div class="codehead"><span>Read a specific archive</span><span class="where">Any node</span></div>
+      <pre><span class="c">-- first parameter is the archive number</span>
+<span class="k">EXEC</span> xp_readerrorlog 7;
+
+<span class="c">-- filtered</span>
+<span class="k">EXEC</span> xp_readerrorlog 7, 1, <span class="s">N'35250'</span>;</pre>
+    </figure>
+
+    <p><strong>In SSMS:</strong> Object Explorer → Management → SQL Server Logs. Log File Viewer can load several archives at once, so you can search across them rather than one at a time.</p>
+
+    <p><strong>On disk</strong>, do not guess the path — ask the instance:</p>
+
+    <figure>
+      <div class="codehead"><span>Find the log directory</span><span class="where">Any node</span></div>
+      <pre><span class="k">SELECT</span> <span class="k">SERVERPROPERTY</span>(<span class="s">'ErrorLogFileName'</span>);</pre>
+    </figure>
+
+    <div class="path">C:\Program Files\Microsoft SQL Server\MSSQL##.INSTANCE\MSSQL\Log\</div>
+
+    <p class="quiet">Files are UTF-16LE. Garbled text or interleaved nulls means the reader picked the wrong encoding, not a corrupt file.</p>
+
+    <figure>
+      <div class="codehead"><span>Search an archive from PowerShell</span><span class="where">On the node</span></div>
+      <pre>Get-Content <span class="s">'C:\...\MSSQL\Log\ERRORLOG.7'</span> -Encoding Unicode |
+  Select-String <span class="s">'35250'</span></pre>
+    </figure>
+  </section>
+
+  <section>
+    <span class="num">03 — Extended events</span>
+    <h2>AlwaysOn_health</h2>
+    <p class="lede">Binary <code>.xel</code> files — not readable in a text editor. This session records role changes, lease timeouts, suspend and resume, and AG DDL, and it reaches back much further than the error log.</p>
+
+    <p><strong>In SSMS:</strong> Management → Extended Events → Sessions → AlwaysOn_health → right-click the target → View Target Data. Or File → Open → File on the <code>.xel</code> itself, which pulls in the whole rollover set from that folder.</p>
+
+    <figure>
+      <div class="codehead"><span>Shred AG DDL events</span><span class="where">Run on each replica</span></div>
+      <pre><span class="k">WITH</span> x <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">CAST</span>(event_data <span class="k">AS</span> <span class="k">XML</span>) <span class="k">AS</span> ev
+    <span class="k">FROM</span> sys.fn_xe_file_target_read_file(
+        <span class="s">'C:\...\MSSQL\Log\AlwaysOn_health*.xel'</span>, <span class="k">NULL</span>, <span class="k">NULL</span>, <span class="k">NULL</span>)
+)
+<span class="k">SELECT</span>
+    ev.value(<span class="s">'(event/@name)[1]'</span>, <span class="s">'varchar(100)'</span>)   <span class="k">AS</span> event_name,
+    ev.value(<span class="s">'(event/@timestamp)[1]'</span>, <span class="s">'datetime2'</span>) <span class="k">AS</span> utc_time,
+    ev.value(<span class="s">'(event/data[@name="availability_group_name"]/value)[1]'</span>,
+             <span class="s">'varchar(200)'</span>)                          <span class="k">AS</span> ag_name,
+    ev.value(<span class="s">'(event/data[@name="database_name"]/value)[1]'</span>,
+             <span class="s">'varchar(200)'</span>)                          <span class="k">AS</span> db_name,
+    ev.value(<span class="s">'(event/data[@name="ddl_action"]/text)[1]'</span>,
+             <span class="s">'varchar(100)'</span>)                          <span class="k">AS</span> ddl_action,
+    ev.value(<span class="s">'(event/data[@name="statement"]/value)[1]'</span>,
+             <span class="s">'varchar(max)'</span>)                          <span class="k">AS</span> statement
+<span class="k">FROM</span> x
+<span class="k">WHERE</span> ev.value(<span class="s">'(event/@name)[1]'</span>, <span class="s">'varchar(100)'</span>) <span class="k">LIKE</span> <span class="s">'%ddl%'</span>
+<span class="k">ORDER BY</span> utc_time <span class="k">DESC</span>;</pre>
+    </figure>
+
+    <p class="quiet">The wildcard in the path matters — it reads every rollover file in one pass. Timestamps come back in UTC; convert before comparing against the error log.</p>
+
+    <table>
+      <thead><tr><th>Event</th><th>Answers</th></tr></thead>
+      <tbody>
+        <tr><td class="t">availability_group_ddl_executed</td><td>When a database was added to the AG, and the exact statement used.</td></tr>
+        <tr><td class="t">data_movement_suspend_resume</td><td>Who paused synchronization and whether it was ever resumed.</td></tr>
+        <tr><td class="t">availability_replica_state_change</td><td>Role transitions and resolving states.</td></tr>
+        <tr><td class="t">error_reported</td><td>Engine errors captured in AG context, including connection failures.</td></tr>
+      </tbody>
+    </table>
+
+    <p class="quiet">If <code>SELECT name FROM sys.dm_xe_sessions;</code> does not list AlwaysOn_health, the session is stopped and there is nothing to read. It is created by the AG wizard but not always left running.</p>
+  </section>
+
+  <section>
+    <span class="num">04 — Cluster</span>
+    <h2>Windows failover cluster logs</h2>
+    <p class="lede">The detailed cluster log does not exist as a file until you generate it. Everything else lives in Event Viewer.</p>
+
+    <figure>
+      <div class="codehead"><span>Generate the cluster log</span><span class="where">Any cluster node</span></div>
+      <pre><span class="c"># TimeSpan is in minutes, working back from now</span>
+Get-ClusterLog -Destination C:\Temp -TimeSpan 60 -UseLocalTime</pre>
+    </figure>
+
+    <p>Without <code>-Destination</code> it writes to <code>C:\Windows\Cluster\Reports\</code> on each node. It pulls from all nodes by default — add <code>-Node NODE01</code> to narrow. Always pass <code>-UseLocalTime</code>, or timestamps arrive in UTC and will not line up with the SQL error log. Search the output for <code>[RES]</code>, <code>ERR</code>, and the AG's resource name.</p>
+
+    <figure>
+      <div class="codehead"><span>Cluster events</span><span class="where">Any cluster node</span></div>
+      <pre>Get-WinEvent -LogName Microsoft-Windows-FailoverClustering/Operational -MaxEvents 100 |
+  Select-Object TimeCreated, Id, LevelDisplayName, Message | Format-List</pre>
+    </figure>
+
+    <div class="path">Event Viewer → Applications and Services Logs → Microsoft → Windows → FailoverClustering</div>
+
+    <figure>
+      <div class="codehead"><span>Current cluster state</span><span class="where">Any cluster node</span></div>
+      <pre>Get-ClusterResource | Where-Object State -ne <span class="s">'Online'</span>
+Get-ClusterNode
+Get-ClusterGroup</pre>
+    </figure>
+
+    <p class="quiet">Also check the Windows System log for cluster service start and stop events — those often explain a transient disconnect better than the cluster log does.</p>
+  </section>
+
+  <section>
+    <span class="num">05 — Job layer</span>
+    <h2>What the Agent recorded</h2>
+    <p class="lede">When a maintenance script masks the error as 50000, its own logging usually kept the original number.</p>
+
+    <figure>
+      <div class="codehead"><span>Ola Hallengren CommandLog</span><span class="where">Node that ran the job</span></div>
+      <pre><span class="k">SELECT TOP</span> 50 DatabaseName, CommandType, StartTime,
+       ErrorNumber, ErrorMessage, Command
+<span class="k">FROM</span> master.dbo.CommandLog
+<span class="k">WHERE</span> ErrorNumber &lt;&gt; 0
+<span class="k">ORDER BY</span> ID <span class="k">DESC</span>;</pre>
+    </figure>
+
+    <p class="quiet">Empty or stale means the job was not run with <code>@LogToTable = 'Y'</code>.</p>
+
+    <figure>
+      <div class="codehead"><span>Job step output files</span><span class="where">Node that ran the job</span></div>
+      <pre><span class="k">EXEC</span> msdb.dbo.sp_help_jobsteplog @job_name = <span class="s">'YourJobName'</span>;</pre>
+    </figure>
+
+    <figure>
+      <div class="codehead"><span>Confirm which databases the job targets</span><span class="where">Node that ran the job</span></div>
+      <pre><span class="k">SELECT</span> j.name, s.step_id, s.step_name, s.command
+<span class="k">FROM</span> msdb.dbo.sysjobsteps s
+<span class="k">JOIN</span> msdb.dbo.sysjobs j <span class="k">ON</span> j.job_id = s.job_id
+<span class="k">WHERE</span> s.command <span class="k">LIKE</span> <span class="s">'%DatabaseBackup%'</span>;</pre>
+    </figure>
+
+    <p class="quiet">A scope of <code>USER_DATABASES</code> will happily attempt log backups on databases that are not AG members — a frequent explanation for a handful of failures among many successes.</p>
+  </section>
+
+  <section>
+    <span class="num">06 — Before you start</span>
+    <h2>Things that waste an hour</h2>
+    <table>
+      <thead><tr><th>Trap</th><th>Effect</th><th>Guard</th></tr></thead>
+      <tbody>
+        <tr><td class="t bad">UTC vs local</td><td>Cluster logs and .xel are UTC; the SQL error log is local. Events look unrelated.</td><td><code>-UseLocalTime</code>, and convert xel timestamps.</td></tr>
+        <tr><td class="t bad">msdb is per-node</td><td>Backup history exists only where the backup ran.</td><td>Query every replica, or merge via linked servers.</td></tr>
+        <tr><td class="t bad">Archive rollover</td><td>Restarts consume slots; the event may already be gone.</td><td>Check .xel and CommandLog for older events.</td></tr>
+        <tr><td class="t mid">database_id is local</td><td>The same database has different IDs on each replica.</td><td>Join on name via <code>DB_NAME()</code>.</td></tr>
+        <tr><td class="t ok">Reproduce by hand</td><td>Running the statement directly surfaces the unwrapped error immediately.</td><td>Fastest path when logs are ambiguous.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="foot">Verify against your own environment before running in production</p>
+
+</div>
+
+<script>
+document.querySelectorAll('figure').forEach(function (fig) {
+  var head = fig.querySelector('.codehead');
+  var pre  = fig.querySelector('pre');
+  if (!head || !pre) return;
+
+  var btn = document.createElement('button');
+  btn.className = 'copy';
+  btn.type = 'button';
+  btn.textContent = 'Copy';
+  head.appendChild(btn);
+
+  btn.addEventListener('click', function () {
+    var text = pre.innerText;
+    var done = function () {
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function () {
+        btn.textContent = 'Copy';
+        btn.classList.remove('done');
+      }, 1600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else {
+      fallback(text, done);
+    }
+  });
+});
+
+function fallback(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
